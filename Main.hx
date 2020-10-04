@@ -66,7 +66,7 @@ class Main {
 		// clear canvas
 		ctx2d.clearRect(0, 0, canvas.width, canvas.height);
 
-		// for (ball in balls) {
+		// iterate balls, apply forces and draw
 		for (i in 0...balls.length) {
 			var ball = balls[i];
 			ball.vx += -airDampening * ball.vx * dt_s;
@@ -100,6 +100,7 @@ class Main {
 				var f = 0.0;
 				// close-range repulsion
 				f += -1000000.0 / (Math.pow(d, 4) + 100);
+				// far range attraction
 				f += 2000.0 / (dSq + 100);
 
 				ball.vx += (f * dx / d) * dt_s;
@@ -141,14 +142,12 @@ class Main {
 				ball.vx *= wallFriction;
 			}
 
+			// draw ball
 			ctx2d.beginPath();
 			ctx2d.arc(ball.x, ball.y, 5, 0, 2 * Math.PI);
-			// ctx2d.fillStyle = 'rgba(${ball.r * 255}, ${ball.g * 255}, ${ball.b * 255}, 1.)';
-			// ctx2d.fillStyle = 'rgba(${ball.r * 255}, ${ball.g * 255}, ${ball.b * 255}, 1.)';
 			ctx2d.fillStyle = 'rgba(${ball.r * 255}, ${ball.g * 255}, ${ball.b * 255}, 1.0)';
 			ctx2d.fill();
 		}
-
 
 		window.requestAnimationFrame(frameLoop);
 	}
