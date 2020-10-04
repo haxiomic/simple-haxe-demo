@@ -9,4 +9,5 @@ This demo uses [canvas 2D](https://developer.mozilla.org/en-US/docs/Web/API/Canv
 
 ## Editing
 - Open this directory in vscode
+- Install [vshaxe extenion](https://marketplace.visualstudio.com/items?itemName=nadako.vshaxe)
 - Build with **Terminal** > **Run Build Task**
