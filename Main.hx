@@ -16,7 +16,7 @@ class Main {
 	var gravity = 0;
 	var wallDampening = 0.9;
 	var wallFriction = 0.9;
-	var mouseAttraction = 50;
+	var mouseAttraction = 300000;
 	var airDampening = 0.2;
 
 	// state
@@ -82,8 +82,7 @@ class Main {
 				var dSq = dx*dx + dy*dy;
 				var d = Math.sqrt(dSq);
 
-				// var f = mouseAttraction * d;
-				var f = -300000 / (dSq + 50);
+				var f = -mouseAttraction / (dSq + 50);
 
 				ball.vx += (f * dx / d) * dt_s;
 				ball.vy += (f * dy / d) * dt_s;
