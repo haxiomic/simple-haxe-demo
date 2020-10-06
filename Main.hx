@@ -2,171 +2,144 @@ import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.Browser.*;
 
-class Main {
+import VectorMath;
 
-	static function main() {
-		trace('Entry point!');
-		new Main();
-	}
+final canvas: CanvasElement = document.createCanvasElement();
+final ctx2d: CanvasRenderingContext2D = canvas.getContext2d();
 
-	final canvas: CanvasElement;
-	final ctx2d: CanvasRenderingContext2D;
+// settings
+var gravity = 0;
+var wallDampening = 0.9;
+var wallFriction = 0.9;
+var mouseAttraction = 300000;
+var airDampening = 0.2;
 
-	// settings
-	var gravity = 0;
-	var wallDampening = 0.9;
-	var wallFriction = 0.9;
-	var mouseAttraction = 300000;
-	var airDampening = 0.2;
+// state
+var mouseActive: Bool = false;
+var mousePos = vec2(0);
 
-	// state
-	var mouseActive: Bool = false;
-	var mouseX: Float = null;
-	var mouseY: Float = null;
+var balls = new Array<Ball>();
 
-	var balls = new Array<Ball>();
+function main() {
+	document.body.appendChild(canvas);
+	canvas.width = 800;
+	canvas.height = 600;
 
-	function new() {
-		canvas = document.createCanvasElement();
-		document.body.appendChild(canvas);
-		canvas.width = 800;
-		canvas.height = 600;
+	window.requestAnimationFrame(frameLoop);
+	canvas.addEventListener('mousemove', (e) -> {
+		mouseActive = true;
+		mousePos.x = e.clientX;
+		mousePos.y = e.clientY;
+	});
+	canvas.addEventListener('mouseleave', (e) -> {
+		mouseActive = false;
+	});
 
-		ctx2d = canvas.getContext2d();
+	// create a bunch of balls
+	var w = 20;
+	var h = 20;
+	for (i in 0...w) {
+		for (j in 0...h) {
+			var uv = vec2(i / (w - 1), j / (h - 1));
+			var ball = new Ball(uv * vec2(canvas.width, canvas.height));
+			ball.rgb = vec3(uv, 1.);
+			balls.push(ball);
 
-		window.requestAnimationFrame(frameLoop);
-		canvas.addEventListener('mousemove', (e) -> {
-			mouseActive = true;
-			mouseX = e.clientX;
-			mouseY = e.clientY;
-		});
-		canvas.addEventListener('mouseleave', (e) -> {
-			mouseActive = false;
-		});
-
-		// create a bunch of balls
-		var w = 20;
-		var h = 20;
-		for (i in 0...w) {
-			for (j in 0...h) {
-				var u = i / (w - 1);
-				var v = j / (h - 1);
-				var ball = new Ball(u * canvas.width, v * canvas.height);
-				ball.r = u;
-				ball.g = v;
-				ball.b = 1.0;
-				balls.push(ball);
-			}
+			trace(ball);
 		}
 	}
+}
 
-	function frameLoop(t_ms: Float) {
-		var dt_s = 1/60;
+function frameLoop(t_ms: Float) {
+	var dt_s = 1/60;
 
-		// clear canvas
-		ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+	// clear canvas
+	ctx2d.clearRect(0, 0, canvas.width, canvas.height);
 
-		// iterate balls, apply forces and draw
-		for (i in 0...balls.length) {
-			var ball = balls[i];
-			ball.vx += -airDampening * ball.vx * dt_s;
-			ball.vy += -airDampening * ball.vy * dt_s;
+	// iterate balls, apply forces and draw
+	for (i in 0...balls.length) {
+		var ball = balls[i];
 
-			// gravity
-			ball.vy += gravity * dt_s;
+		ball.vel += -airDampening * ball.vel * dt_s;
 
-			// attraction to mouse
-			if (mouseActive) {
-				var dx = mouseX - ball.x;
-				var dy = mouseY - ball.y;
-				var dSq = dx*dx + dy*dy;
-				var d = Math.sqrt(dSq);
+		// gravity
+		ball.vel.y += gravity * dt_s;
 
-				var f = -mouseAttraction / (dSq + 50);
+		// attraction to mouse
+		if (mouseActive) {
+			var delta = mousePos - ball.pos;
+			var distance = length(delta);
+			var deltaNorm = delta / distance;
 
-				ball.vx += (f * dx / d) * dt_s;
-				ball.vy += (f * dy / d) * dt_s;
-			}
+			var f = -mouseAttraction / (distance * distance + 50);
 
-			// interaction with other balls
-			for (j in (i + 1)...balls.length) {
-				var ball2 = balls[j];
-				var dx = ball2.x - ball.x;
-				var dy = ball2.y - ball.y;
-				var dSq = dx*dx + dy*dy;
-				var d = Math.sqrt(dSq);
-
-				var f = 0.0;
-				// close-range repulsion
-				f += -1000000.0 / (Math.pow(d, 4) + 100);
-				// far range attraction
-				f += 2000.0 / (dSq + 100);
-
-				ball.vx += (f * dx / d) * dt_s;
-				ball.vy += (f * dy / d) * dt_s;
-				ball2.vx -= (f * dx / d) * dt_s;
-				ball2.vy -= (f * dy / d) * dt_s;
-			}
-
-			ball.x += ball.vx * dt_s;
-			ball.y += ball.vy * dt_s;
-
-			// collide with walls
-			// right
-			var dx = ball.x - canvas.width;
-			if (dx > 0) {
-				ball.x = canvas.width - dx;
-				ball.vx *= -wallDampening;
-				ball.vy *= wallFriction;
-			}
-			// left
-			var dx = ball.x;
-			if (dx < 0) {
-				ball.x = - dx;
-				ball.vx *= -wallDampening;
-				ball.vy *= wallFriction;
-			}
-			// bottom
-			var dy = ball.y - canvas.height;
-			if (dy > 0) {
-				ball.y = canvas.height - dy;
-				ball.vy *= -wallDampening;
-				ball.vx *= wallFriction;
-			}
-			// top
-			var dy = ball.y;
-			if (dy < 0) {
-				ball.y = - dy;
-				ball.vy *= -wallDampening;
-				ball.vx *= wallFriction;
-			}
-
-			// draw ball
-			ctx2d.beginPath();
-			ctx2d.arc(ball.x, ball.y, 5, 0, 2 * Math.PI);
-			ctx2d.fillStyle = 'rgba(${ball.r * 255}, ${ball.g * 255}, ${ball.b * 255}, 1.0)';
-			ctx2d.fill();
+			ball.vel += f * deltaNorm * dt_s;
 		}
 
-		window.requestAnimationFrame(frameLoop);
+		// interaction with other balls
+		for (j in (i + 1)...balls.length) {
+			var ball2 = balls[j];
+			var delta = ball2.pos - ball.pos;
+			var distance = length(delta);
+			var deltaNorm = delta / distance;
+
+			var f = 0.0;
+			// close-range repulsion
+			f += -1000000.0 / (Math.pow(distance, 4) + 100);
+			// far range attraction
+			f += 2000.0 / (distance*distance + 100);
+
+			ball.vel += f * deltaNorm * dt_s;
+			ball2.vel -= f * deltaNorm * dt_s;
+		}
+
+		ball.pos += ball.vel * dt_s;
+
+		// collide with walls
+		// right
+		var canvasSize = vec2(canvas.width, canvas.height);
+		var wallInteraction = vec2(-wallDampening, wallFriction);
+		var delta = ball.pos - canvasSize;
+
+		// right
+		if (delta.x > 0) {
+			ball.pos.x = canvasSize.x - delta.x;
+			ball.vel *= wallInteraction;
+		}
+		// bottom
+		if (delta.y > 0) {
+			ball.pos.y = canvasSize.y - delta.y;
+			ball.vel *= wallInteraction.yx;
+		}
+		// left
+		if (ball.pos.x < 0) {
+			ball.pos.x = -ball.pos.x;
+			ball.vel *= wallInteraction;
+		}
+		// top
+		if (ball.pos.y < 0) {
+			ball.pos.y = -ball.pos.y;
+			ball.vel *= wallInteraction.yx;
+		}
+
+		// draw ball
+		ctx2d.beginPath();
+		ctx2d.arc(ball.pos.x, ball.pos.y, 5, 0, 2 * Math.PI);
+		ctx2d.fillStyle = 'rgba(${ball.rgb.x * 255}, ${ball.rgb.y * 255}, ${ball.rgb.z * 255}, 1.0)';
+		ctx2d.fill();
 	}
 
+	window.requestAnimationFrame(frameLoop);
 }
 
 class Ball {
 
-	public var x: Float = 0.;
-	public var y: Float = 0.;
-	public var vx: Float = 0.;
-	public var vy: Float = 0.;
+	public var pos = vec2(0);
+	public var vel = vec2(0);
+	public var rgb = vec3(0);
 
-	public var r: Float = 0;
-	public var g: Float = 0;
-	public var b: Float = 0;
-
-	public function new(x: Float, y: Float) {
-		this.x = x;
-		this.y = y;
+	public function new(pos: Vec2) {
+		this.pos = pos.clone();
 	}
 
 }

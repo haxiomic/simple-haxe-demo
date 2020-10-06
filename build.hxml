@@ -1,3 +1,4 @@
 --main Main
 --js main.js
 --dce full
+-D analyzer-optimize
