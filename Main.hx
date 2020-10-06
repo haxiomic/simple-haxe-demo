@@ -8,7 +8,7 @@ final canvas: CanvasElement = document.createCanvasElement();
 final ctx2d: CanvasRenderingContext2D = canvas.getContext2d();
 
 // settings
-var gravity = 0;
+var gravity = 0.0;
 var wallDampening = 0.9;
 var wallFriction = 0.9;
 var mouseAttraction = 300000;
@@ -42,10 +42,9 @@ function main() {
 		for (j in 0...h) {
 			var uv = vec2(i / (w - 1), j / (h - 1));
 			var ball = new Ball(uv * vec2(canvas.width, canvas.height));
-			ball.rgb = vec3(uv, 1.);
+			var rgb = vec3(uv, 1.);
+			ball.fillStyle = 'rgba(${rgb.x * 255}, ${rgb.y * 255}, ${rgb.z * 255}, 1.0)';
 			balls.push(ball);
-
-			trace(ball);
 		}
 	}
 }
@@ -125,7 +124,7 @@ function frameLoop(t_ms: Float) {
 		// draw ball
 		ctx2d.beginPath();
 		ctx2d.arc(ball.pos.x, ball.pos.y, 5, 0, 2 * Math.PI);
-		ctx2d.fillStyle = 'rgba(${ball.rgb.x * 255}, ${ball.rgb.y * 255}, ${ball.rgb.z * 255}, 1.0)';
+		ctx2d.fillStyle = ball.fillStyle;
 		ctx2d.fill();
 	}
 
@@ -134,12 +133,12 @@ function frameLoop(t_ms: Float) {
 
 class Ball {
 
-	public var pos = vec2(0);
-	public var vel = vec2(0);
-	public var rgb = vec3(0);
+	public final pos = vec2(0);
+	public final vel = vec2(0);
+	public var fillStyle: String;
 
 	public function new(pos: Vec2) {
-		this.pos = pos.clone();
+		this.pos.copyFrom(pos);
 	}
 
 }
